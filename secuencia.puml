@@ -1,0 +1,716 @@
+@startuml Registro_Terreno_Plantacion
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam BoxPadding 10
+
+title Diagrama de Secuencia: Sistema de Comercio Electrónico\nEjecución del método crear_tierra_con_plantacion
+
+box "Usuario" #LightBlue
+participant "Cliente" as Cliente
+end box
+
+box "<<Singleton>>\nTierraService" #LightYellow
+participant ":TierraService" as TS
+end box
+
+box "<<Entity>>\nTierra" #LightGreen
+participant ":Tierra" as T
+end box
+
+box "<<Entity>>\nPlantacion" #LightGreen
+participant ":Plantacion" as P
+end box
+
+box "<<Entity>>\nRegistroForestal" #LightGreen
+participant ":RegistroForestal" as RF
+end box
+
+== 1. PATRON SINGLETON - Consultar o BB ==
+
+Cliente -> TS: crear_tierra_con_plantacion(\npadron: int, superficie: float,\ndomicilio: str, nombre: str)
+activate Cliente
+activate TS
+
+note right of TS: Crear instancia de terreno\ny plantación
+
+TS -> T: <<create>>\n__init__(padron, superficie, domicilio)
+activate T
+T --> TS: terreno
+deactivate T
+
+TS -> P: <<create>>\n__init__(nombre, superficie, agua=500)
+activate P
+P --> TS: plantacion
+deactivate P
+
+TS -> T: set_finca(plantacion)
+activate T
+T --> TS
+deactivate T
+
+TS --> Cliente: terreno
+deactivate TS
+
+== 2. PATRON FACTORY - Crear Productos ==
+
+note over Cliente, RF: El cliente crea registro forestal completo
+
+Cliente -> RF: <<create>>\n__init__(padron, tierra, plantacion,\npropietario, avaluo)
+activate RF
+RF --> Cliente: registro
+deactivate RF
+
+Cliente -> RF: get_propietario()
+activate RF
+RF --> Cliente: propietario
+deactivate RF
+
+Cliente -> RF: get_avaluo()
+activate RF
+RF --> Cliente: avaluo
+deactivate RF
+
+Cliente -> RF: get_tierra()
+activate RF
+RF --> Cliente: tierra
+deactivate RF
+
+deactivate Cliente
+
+@enduml
+
+@startuml Plantar_Cultivos_Factory
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+title Diagrama de Secuencia: Sistema de Gestión Forestal\nEjecución del método plantar
+
+box "Usuario" #LightBlue
+participant "Cliente" as Cliente
+end box
+
+box "<<Service>>\nPlantacionService" #LightYellow
+participant ":PlantacionService" as PS
+end box
+
+box "<<Factory>>\nCultivoFactory" #Orange
+participant "CultivoFactory" as CF
+end box
+
+box "<<Entity>>\nPino" #LightGreen
+participant ":Pino" as Pino
+end box
+
+box "<<Entity>>\nPlantacion" #LightGreen
+participant ":Plantacion" as PL
+end box
+
+== 1. PATRON SINGLETON - Consultar o BB ==
+
+Cliente -> PS: plantar(plantacion: Plantacion,\nespecie: str, cantidad: int)
+activate Cliente
+activate PS
+
+== 2. PATRON FACTORY - Crear Productos ==
+
+loop Para cada cultivo [i=1 to cantidad]
+    
+    PS -> PS: _verificar_superficie_disponible()
+    activate PS
+    PS --> PS: superficie_ok
+    deactivate PS
+    
+    alt Superficie suficiente
+        
+        PS -> CF: crear_cultivo("Pino")
+        activate CF
+        
+        note right of CF: Factory Method crea\ninstancia según especie
+        
+        CF -> Pino: <<create>>\n__init__(variedad="Parana")
+        activate Pino
+        
+        Pino --> CF: cultivo
+        deactivate Pino
+        
+        CF --> PS: cultivo
+        deactivate CF
+        
+        PS -> PL: agregar_cultivo(cultivo)
+        activate PL
+        PL --> PS
+        deactivate PL
+        
+        PS -> PL: get_superficie_ocupada()
+        activate PL
+        PL --> PS: superficie_actual
+        deactivate PL
+        
+        PS -> PL: set_superficie_ocupada(\nsuperficie_actual + 2.0)
+        activate PL
+        PL --> PS
+        deactivate PL
+        
+    else Superficie insuficiente
+        
+        PS --> Cliente: <<exception>>\nSuperificeInsuficienteException
+        
+    end
+    
+end
+
+PS --> Cliente: void
+deactivate PS
+deactivate Cliente
+
+@enduml
+
+@startuml Sistema_Riego_Automatizado
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+title Diagrama de Secuencia: Sistema de Riego Automatizado\nEjecución de threads concurrentes
+
+box "Usuario" #LightBlue
+participant "Main" as Main
+end box
+
+box "<<Observable>>\nTemperaturaReader" #Pink
+participant ":TempReader\n<<Thread>>" as TR
+end box
+
+box "<<Observable>>\nHumedadReader" #Pink
+participant ":HumReader\n<<Thread>>" as HR
+end box
+
+box "<<Observer>>\nControlRiego" #LightCyan
+participant ":ControlRiego\n<<Thread>>" as CR
+end box
+
+box "<<Service>>\nPlantacionService" #LightYellow
+participant ":PlantacionService" as PS
+end box
+
+box "<<Entity>>\nPlantacion" #LightGreen
+participant ":Plantacion" as P
+end box
+
+== 1. INICIALIZACIÓN - Arrancar Threads ==
+
+Main -> TR: start()
+activate Main
+activate TR
+
+Main -> HR: start()
+activate HR
+
+Main -> CR: start()
+activate CR
+
+note over TR, CR: Threads daemon ejecutándose en paralelo
+
+== 2. PATRON OBSERVER - Sistema de Notificaciones ==
+
+loop Cada 2 segundos [Sensor Temperatura]
+    
+    TR -> TR: _leer_temperatura()
+    activate TR
+    
+    note right of TR: Lee valor del sensor\n(aleatorio -25°C a 50°C)
+    
+    TR --> TR: temperatura
+    deactivate TR
+    
+    TR -> CR: notificar_observadores(temperatura)
+    activate CR
+    
+    CR -> CR: actualizar(temperatura)
+    activate CR
+    
+    note right of CR: Almacena última\ntemperatura leída
+    
+    CR --> CR
+    deactivate CR
+    
+    CR --> TR
+    deactivate CR
+    
+end
+
+loop Cada 3 segundos [Sensor Humedad]
+    
+    HR -> HR: _leer_humedad()
+    activate HR
+    
+    note right of HR: Lee valor del sensor\n(aleatorio 0% a 100%)
+    
+    HR --> HR: humedad
+    deactivate HR
+    
+    HR -> CR: notificar_observadores(humedad)
+    activate CR
+    
+    CR -> CR: actualizar(humedad)
+    activate CR
+    
+    note right of CR: Almacena última\nhumedad leída
+    
+    CR --> CR
+    deactivate CR
+    
+    CR --> HR
+    deactivate CR
+    
+end
+
+== 3. EVALUACIÓN Y RIEGO ==
+
+loop Cada 2.5 segundos [Control de Riego]
+    
+    CR -> CR: _evaluar_condiciones()
+    activate CR
+    
+    note right of CR: Verifica:\n8°C ≤ temp ≤ 15°C\nhumedad < 50%
+    
+    CR --> CR: debe_regar
+    deactivate CR
+    
+    alt Condiciones cumplidas (8°C-15°C y <50%)
+        
+        CR -> PS: regar(plantacion)
+        activate PS
+        
+        PS -> P: get_agua_disponible()
+        activate P
+        P --> PS: agua_actual
+        deactivate P
+        
+        alt Agua suficiente (>=10L)
+            
+            PS -> P: set_agua_disponible(agua_actual - 10)
+            activate P
+            P --> PS
+            deactivate P
+            
+            PS -> PS: _regar_cultivos()
+            activate PS
+            
+            note right of PS: Distribuye agua a\ntodos los cultivos
+            
+            PS --> PS
+            deactivate PS
+            
+            PS --> CR: void
+            
+        else Agua insuficiente
+            
+            PS --> CR: <<exception>>\nAguaAgotadaException
+            
+        end
+        
+        deactivate PS
+        
+    else Condiciones NO cumplidas
+        
+        note right of CR: No se ejecuta riego
+        
+    end
+    
+end
+
+== 4. DETENCIÓN SEGURA ==
+
+Main -> TR: detener()
+Main -> HR: detener()
+Main -> CR: detener()
+
+note over TR, CR: Threads finalizan gracefully\ncon Event y timeout de 2s
+
+deactivate TR
+deactivate HR
+deactivate CR
+deactivate Main
+
+@enduml
+
+@startuml Gestion_Trabajadores
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+title Diagrama de Secuencia: Gestión de Trabajadores\nEjecución de tareas con apto médico
+
+box "Usuario" #LightBlue
+participant "Cliente" as Cliente
+end box
+
+box "<<Service>>\nTrabajadorService" #LightYellow
+participant ":TrabajadorService" as TS
+end box
+
+box "<<Entity>>\nTrabajador" #LightGreen
+participant ":Trabajador" as T
+end box
+
+box "<<Entity>>\nAptoMedico" #LightGreen
+participant ":AptoMedico" as AM
+end box
+
+box "<<Entity>>\nTarea" #LightGreen
+participant ":Tarea" as TA
+end box
+
+box "<<Entity>>\nHerramienta" #LightGreen
+participant ":Herramienta" as H
+end box
+
+== 1. CREAR TRABAJADOR ==
+
+Cliente -> T: <<create>>\n__init__(dni, nombre, tareas[])
+activate Cliente
+activate T
+T --> Cliente: trabajador
+deactivate T
+
+== 2. ASIGNAR APTO MÉDICO ==
+
+Cliente -> TS: asignar_apto_medico(trabajador,\napto: bool, fecha: date, observaciones: str)
+activate TS
+
+TS -> AM: <<create>>\n__init__(apto, fecha, observaciones)
+activate AM
+
+note right of AM: Crear certificado médico\ncon estado y observaciones
+
+AM --> TS: apto_medico
+deactivate AM
+
+TS -> T: set_apto_medico(apto_medico)
+activate T
+T --> TS
+deactivate T
+
+TS --> Cliente: void
+deactivate TS
+
+== 3. EJECUTAR TAREAS ==
+
+Cliente -> TS: trabajar(trabajador: Trabajador,\nfecha: date, herramienta: Herramienta)
+activate TS
+
+TS -> T: get_apto_medico()
+activate T
+T --> TS: apto_medico
+deactivate T
+
+TS -> AM: esta_apto()
+activate AM
+
+note right of AM: Verificar si el trabajador\nestá apto para trabajar
+
+AM --> TS: True/False
+deactivate AM
+
+alt Tiene apto médico válido
+    
+    TS -> T: get_tareas()
+    activate T
+    T --> TS: tareas[]
+    deactivate T
+    
+    TS -> TS: _ordenar_tareas_por_id()
+    activate TS
+    
+    note right of TS: Ordena tareas en orden\ndescendente por ID
+    
+    TS --> TS: tareas_ordenadas
+    deactivate TS
+    
+    loop Para cada tarea en tareas_ordenadas
+        
+        TS -> TA: get_fecha()
+        activate TA
+        TA --> TS: fecha_tarea
+        deactivate TA
+        
+        alt fecha_tarea == fecha actual
+            
+            TS -> TA: get_descripcion()
+            activate TA
+            TA --> TS: descripcion
+            deactivate TA
+            
+            TS -> T: get_nombre()
+            activate T
+            T --> TS: nombre
+            deactivate T
+            
+            TS -> H: get_nombre()
+            activate H
+            H --> TS: nombre_herramienta
+            deactivate H
+            
+            note right of TS: Imprime:\n"El trabajador {nombre} realizó\nla tarea {id} {desc} con\nherramienta: {herramienta}"
+            
+            TS -> TA: marcar_completada()
+            activate TA
+            TA --> TS
+            deactivate TA
+            
+        end
+        
+    end
+    
+    TS --> Cliente: True
+    
+else Sin apto médico o no válido
+    
+    note right of TS: El trabajador no puede\nejercer tareas sin apto
+    
+    TS --> Cliente: False
+    
+end
+
+deactivate TS
+deactivate Cliente
+
+@enduml
+
+@startuml Persistencia_Recuperacion
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+title Diagrama de Secuencia: Persistencia y Recuperación\nSerialización con Pickle
+
+box "Usuario" #LightBlue
+participant "Cliente" as Cliente
+end box
+
+box "<<Service>>\nRegistroForestalService" #LightYellow
+participant ":RegistroService" as RS
+end box
+
+box "<<External>>\nSistema de Archivos" #LightGray
+participant "FileSystem" as FS
+end box
+
+box "<<Entity>>\nRegistroForestal" #LightGreen
+participant ":RegistroForestal" as RF
+end box
+
+== 1. PERSISTIR REGISTRO ==
+
+Cliente -> RS: persistir(registro: RegistroForestal)
+activate Cliente
+activate RS
+
+RS -> RF: get_propietario()
+activate RF
+RF --> RS: propietario
+deactivate RF
+
+note right of RS: Obtiene nombre del propietario\npara crear archivo
+
+RS -> FS: os.path.exists("data")
+activate FS
+FS --> RS: False
+deactivate FS
+
+alt Directorio no existe
+
+    RS -> FS: os.makedirs("data")
+    activate FS
+    
+    note right of FS: Crea directorio\nsi no existe
+    
+    FS --> RS
+    deactivate FS
+    
+end
+
+RS -> FS: open("data/{propietario}.dat", "wb")
+activate FS
+FS --> RS: file_handler
+deactivate FS
+
+RS -> FS: pickle.dump(registro, file_handler)
+activate FS
+
+note right of FS: Serializa objeto completo\nRegistroForestal
+
+FS --> RS
+deactivate FS
+
+RS -> FS: file_handler.close()
+activate FS
+FS --> RS
+deactivate FS
+
+note right of RS: Imprime:\n"Registro de {propietario}\npersistido exitosamente"
+
+RS --> Cliente: void
+deactivate RS
+
+== 2. RECUPERAR REGISTRO ==
+
+Cliente -> RS: leer_registro(propietario: str)
+activate RS
+
+alt propietario es None o vacío
+
+    RS --> Cliente: <<exception>>\nValueError("El nombre del propietario\nno puede ser nulo o vacío")
+    
+end
+
+RS -> FS: os.path.exists("data/{propietario}.dat")
+activate FS
+FS --> RS: existe
+deactivate FS
+
+alt Archivo existe
+    
+    RS -> FS: open("data/{propietario}.dat", "rb")
+    activate FS
+    FS --> RS: file_handler
+    deactivate FS
+    
+    RS -> FS: pickle.load(file_handler)
+    activate FS
+    
+    note right of FS: Deserializa objeto\nRegistroForestal
+    
+    FS --> RS: registro
+    deactivate FS
+    
+    RS -> FS: file_handler.close()
+    activate FS
+    FS --> RS
+    deactivate FS
+    
+    note right of RS: Imprime:\n"Registro de {propietario}\nrecuperado exitosamente"
+    
+    RS --> Cliente: registro
+    
+else Archivo no existe
+    
+    RS --> Cliente: <<exception>>\nPersistenciaException(\n"Archivo no encontrado",\nnombre_archivo,\nTipoOperacion.LECTURA)
+    
+end
+
+deactivate RS
+deactivate Cliente
+
+@enduml
+
+@startuml Cosecha_Empaquetado
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+title Diagrama de Secuencia: Cosecha y Empaquetado\nGenerics Type-Safe
+
+box "Usuario" #LightBlue
+participant "Cliente" as Cliente
+end box
+
+box "<<Service>>\nFincasService" #LightYellow
+participant ":FincasService" as FS
+end box
+
+box "<<Entity>>\nRegistroForestal" #LightGreen
+participant ":RegistroForestal" as RF
+end box
+
+box "<<Entity>>\nPlantacion" #LightGreen
+participant ":Plantacion" as P
+end box
+
+box "<<Generic>>\nPaquete<T>" #Orange
+participant ":Paquete<Lechuga>" as PQ
+end box
+
+== 1. COSECHAR POR TIPO ==
+
+Cliente -> FS: cosechar_yempaquetar(tipo_cultivo: Type[T])
+activate Cliente
+activate FS
+
+note right of FS: Parámetro genérico: Lechuga.class\nRetorna: Paquete<Lechuga>
+
+FS -> FS: _obtener_todas_fincas()
+activate FS
+FS --> FS: fincas[]
+deactivate FS
+
+loop Para cada finca en fincas
+    
+    FS -> RF: get_plantacion()
+    activate RF
+    RF --> FS: plantacion
+    deactivate RF
+    
+    FS -> P: get_cultivos()
+    activate P
+    P --> FS: cultivos[]
+    deactivate P
+    
+    loop Para cada cultivo en cultivos
+        
+        FS -> FS: isinstance(cultivo, tipo_cultivo)
+        activate FS
+        FS --> FS: es_del_tipo
+        deactivate FS
+        
+        alt cultivo es del tipo buscado (Lechuga)
+            
+            FS -> FS: cosecha.append(cultivo)
+            activate FS
+            FS --> FS
+            deactivate FS
+            
+            FS -> P: remover_cultivo(cultivo)
+            activate P
+            
+            note right of P: Remueve cultivo de la\nplantación (cosecha destructiva)
+            
+            P --> FS
+            deactivate P
+            
+        end
+        
+    end
+    
+end
+
+note right of FS: Imprime:\n"COSECHANDO {cantidad} unidades\nde {tipo_cultivo}"
+
+== 2. EMPAQUETAR GENÉRICO ==
+
+FS -> PQ: <<create>>\n__init__(tipo=Lechuga, cultivos=cosecha)
+activate PQ
+
+note right of PQ: Paquete genérico tipo-seguro\nPaquete<Lechuga>
+
+PQ --> FS: paquete
+deactivate PQ
+
+FS --> Cliente: Paquete<Lechuga>
+deactivate FS
+
+== 3. MOSTRAR CONTENIDO ==
+
+Cliente -> PQ: mostrar_contenido_caja()
+activate PQ
+
+note right of PQ: Imprime:\n"Contenido de la caja:"\n"  Tipo: Lechuga"\n"  Cantidad: 5"\n"  ID Paquete: 1"
+
+PQ --> Cliente: void
+deactivate PQ
+
+deactivate Cliente
+
+@enduml
