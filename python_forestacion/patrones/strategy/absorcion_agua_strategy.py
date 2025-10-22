@@ -1,4 +1,3 @@
-
 from abc import ABC, abstractmethod
 from datetime import date
 from typing import TYPE_CHECKING
@@ -8,26 +7,36 @@ if TYPE_CHECKING:
 
 
 class AbsorcionAguaStrategy(ABC):
-    """Estrategia para calcular absorción de agua."""
-    
+    """
+    Estrategia abstracta para calcular la absorción de agua de un cultivo.
+
+    Esta clase define la interfaz común que deben implementar todas las
+    estrategias concretas de absorción (por ejemplo, según tipo de cultivo,
+    etapa de crecimiento o condiciones ambientales).
+    """
+
     @abstractmethod
     def calcular_absorcion(
         self,
         fecha: date,
         temperatura: float,
         humedad: float,
-        cultivo: 'Cultivo'
+        cultivo: "Cultivo",
     ) -> int:
         """
-        Calcula litros de agua absorbidos.
-        
+        Calcula la cantidad de litros de agua absorbidos por el cultivo.
+
         Args:
-            fecha: Fecha actual
-            temperatura: Temperatura ambiente
-            humedad: Humedad relativa
-            cultivo: Cultivo que absorbe
-            
+            fecha: Fecha actual.
+            temperatura: Temperatura ambiente (°C).
+            humedad: Humedad relativa del aire (%).
+            cultivo: Instancia del cultivo que absorbe el agua.
+
         Returns:
-            Litros de agua absorbidos
+            int: Litros de agua absorbidos.
         """
-        pass
+        raise NotImplementedError("La estrategia debe implementar 'calcular_absorcion'.")
+
+    def __repr__(self) -> str:
+        """Representación útil para depuración."""
+        return f"{self.__class__.__name__}()"

@@ -11,7 +11,7 @@ skinparam class {
 }
 
 skinparam note {
-    BackgroundColor LightYellow
+    BackgroundColor White
     BorderColor Black
 }
 
@@ -19,14 +19,14 @@ skinparam note {
 ' PATRON SINGLETON
 ' ============================================
 
-package "Patron Singleton" #LightBlue {
+package "Patron Singleton" {
     note as N_Singleton
         Se asegura de que una clase
         tenga solo una instancia global
         con acceso thread-safe
     end note
     
-    class CultivoServiceRegistry << (S,orchid) Singleton >> {
+    class CultivoServiceRegistry << Singleton >> {
         {static} -_instance : CultivoServiceRegistry
         {static} -_lock : Lock
         -_pino_service : PinoService
@@ -48,14 +48,14 @@ package "Patron Singleton" #LightBlue {
 ' PATRON FACTORY
 ' ============================================
 
-package "Patron Factory" #LightCoral {
+package "Patron Factory" {
     note as N_Factory
         Encapsula la creacion de objetos
         desacoplando el cliente de las
         clases concretas
     end note
     
-    class CultivoFactory << (F,gold) Factory >> {
+    class CultivoFactory << Factory >> {
         {static} +crear_cultivo(especie : String) : Cultivo
         __
         {static} -_crear_pino() : Pino
@@ -73,140 +73,62 @@ package "Patron Factory" #LightCoral {
         +set_agua(agua : int) : void
     }
     
-    class Pino {
-        -_variedad : String
-        -_altura : float
-        __
-        +__init__(variedad : String)
-        +get_variedad() : String
-        +get_altura() : float
-        +crecer(incremento : float) : void
-    }
-    
-    class Olivo {
-        -_tipo_aceituna : TipoAceituna
-        -_altura : float
-        __
-        +__init__(tipo : TipoAceituna)
-        +get_tipo_aceituna() : TipoAceituna
-        +get_altura() : float
-        +crecer(incremento : float) : void
-    }
-    
-    class Lechuga {
-        -_variedad : String
-        -_invernadero : bool
-        __
-        +__init__(variedad : String)
-        +get_variedad() : String
-        +esta_en_invernadero() : bool
-    }
-    
-    class Zanahoria {
-        -_es_baby_carrot : bool
-        -_invernadero : bool
-        __
-        +__init__(es_baby : bool)
-        +is_baby_carrot() : bool
-        +esta_en_invernadero() : bool
-    }
+    class Pino {}
+    class Olivo {}
+    class Lechuga {}
+    class Zanahoria {}
 }
 
 ' ============================================
 ' PATRON STRATEGY
 ' ============================================
 
-package "Patron Strategy" #LightPink {
+package "Patron Strategy" {
     note as N_Strategy
         Define familias de algoritmos
         intercambiables encapsulados
     end note
     
-    interface AbsorcionAguaStrategy << (I,lightblue) Interface >> {
+    interface AbsorcionAguaStrategy {
         +calcular_absorcion(fecha, temp, humedad, cultivo) : int
     }
     
-    class AbsorcionSeasonalStrategy {
-        +calcular_absorcion(fecha, temp, humedad, cultivo) : int
-    }
-    
-    class AbsorcionConstanteStrategy {
-        -_cantidad_constante : int
-        __
-        +__init__(cantidad : int)
-        +calcular_absorcion(fecha, temp, humedad, cultivo) : int
-    }
-    
-    abstract class CultivoService {
-        #_estrategia_absorcion : AbsorcionAguaStrategy
-        __
-        +__init__(estrategia : AbsorcionAguaStrategy)
-        +absorver_agua(cultivo : Cultivo) : int
-        +mostrar_datos(cultivo : Cultivo) : void
-    }
+    class AbsorcionSeasonalStrategy {}
+    class AbsorcionConstanteStrategy {}
+    abstract class CultivoService {}
 }
 
 ' ============================================
 ' PATRON OBSERVER
 ' ============================================
 
-package "Patron Observer" #LightGreen {
+package "Patron Observer" {
     note as N_Observer
         Notifica cambios automaticamente
         a los observadores suscritos
     end note
     
-    interface "Observer<T>" as Observer << (I,lightblue) Interface >> {
+    interface Observer<T> {
         +actualizar(evento : T) : void
     }
     
-    abstract class "Observable<T>" as Observable {
+    abstract class Observable<T> {
         #_observadores : List<Observer<T>>
-        __
         +agregar_observador(obs : Observer<T>) : void
         +eliminar_observador(obs : Observer<T>) : void
         +notificar_observadores(evento : T) : void
     }
     
-    class TemperaturaReaderTask {
-        -_detenido : Event
-        -_intervalo : float
-        __
-        +start() : void
-        +detener() : void
-        +run() : void
-        -_leer_temperatura() : float
-    }
-    
-    class HumedadReaderTask {
-        -_detenido : Event
-        -_intervalo : float
-        __
-        +start() : void
-        +detener() : void
-        +run() : void
-        -_leer_humedad() : float
-    }
-    
-    class ControlRiegoTask {
-        -_detenido : Event
-        -_plantacion : Plantacion
-        -_plantacion_service : PlantacionService
-        -_ultima_temperatura : float
-        -_ultima_humedad : float
-        __
-        +start() : void
-        +detener() : void
-        +actualizar(evento : float) : void
-        -_evaluar_condiciones() : void
-    }
+    class TemperaturaReaderTask {}
+    class HumedadReaderTask {}
+    class ControlRiegoTask {}
 }
 
 ' ============================================
 ' MAIN (Cliente)
 ' ============================================
 
-class Main << (M,green) Main >> {
+class Main {
     +main() : void
 }
 
@@ -253,523 +175,5 @@ Main -down-> ControlRiegoTask : crea
 ' ============================================
 
 CultivoServiceRegistry -down-> CultivoService : contiene
-
-' ============================================
-' NOTA DE PATRONES IMPLEMENTADOS
-' ============================================
-
-note bottom
-    Patrones de Diseño Implementados:
-    • Singleton - CultivoServiceRegistry
-    • Factory - CultivoFactory
-    • Strategy - AbsorcionAguaStrategy
-    • Observer - Observable/Observer
-end note
-
-@enduml
-
-@startuml Patron_Singleton_Detallado
-skinparam linetype ortho
-skinparam class {
-    BackgroundColor White
-    BorderColor Black
-}
-
-title Patrón SINGLETON - CultivoServiceRegistry
-
-class CultivoServiceRegistry << (S,orchid) Singleton >> {
-    ' === ATRIBUTOS ESTATICOS ===
-    {static} -_instance : CultivoServiceRegistry
-    {static} -_lock : Lock
-    
-    ' === SERVICIOS ===
-    -_pino_service : PinoService
-    -_olivo_service : OlivoService
-    -_lechuga_service : LechugaService
-    -_zanahoria_service : ZanahoriaService
-    
-    ' === HANDLERS (REGISTRY) ===
-    -_absorber_agua_handlers : dict<Type, Callable>
-    -_mostrar_datos_handlers : dict<Type, Callable>
-    ====
-    ' === METODOS SINGLETON ===
-    {static} +__new__(cls) : CultivoServiceRegistry
-    {static} +get_instance() : CultivoServiceRegistry
-    -_inicializar_servicios() : void
-    ====
-    ' === METODOS PUBLICOS ===
-    +absorber_agua(cultivo : Cultivo) : int
-    +mostrar_datos(cultivo : Cultivo) : void
-    ====
-    ' === HANDLERS PINO ===
-    -_absorber_agua_pino(cultivo : Pino) : int
-    -_mostrar_datos_pino(cultivo : Pino) : void
-    ====
-    ' === HANDLERS OLIVO ===
-    -_absorber_agua_olivo(cultivo : Olivo) : int
-    -_mostrar_datos_olivo(cultivo : Olivo) : void
-    ====
-    ' === HANDLERS LECHUGA ===
-    -_absorber_agua_lechuga(cultivo : Lechuga) : int
-    -_mostrar_datos_lechuga(cultivo : Lechuga) : void
-    ====
-    ' === HANDLERS ZANAHORIA ===
-    -_absorber_agua_zanahoria(cultivo : Zanahoria) : int
-    -_mostrar_datos_zanahoria(cultivo : Zanahoria) : void
-}
-
-note right of CultivoServiceRegistry::_instance
-    Unica instancia compartida
-    globalmente (thread-safe)
-end note
-
-note right of CultivoServiceRegistry::_lock
-    Lock para garantizar
-    thread-safety en la
-    creacion de instancia
-end note
-
-note right of CultivoServiceRegistry::_absorber_agua_handlers
-    Diccionario de handlers:
-    {
-      Pino: self._absorber_agua_pino,
-      Olivo: self._absorber_agua_olivo,
-      Lechuga: self._absorber_agua_lechuga,
-      Zanahoria: self._absorber_agua_zanahoria
-    }
-    
-    Patron Registry para dispatch O(1)
-end note
-
-note bottom of CultivoServiceRegistry
-    <b>SINGLETON PATTERN</b>
-    
-    Garantiza:
-    • Una unica instancia global
-    • Thread-safe con Lock
-    • Double-checked locking
-    • Lazy initialization
-    
-    Uso:
-    registry = CultivoServiceRegistry()
-    # o
-    registry = CultivoServiceRegistry.get_instance()
-    
-    Ambos retornan la MISMA instancia
-end note
-
-@enduml
-
-@startuml Patron_Factory_Detallado
-skinparam linetype ortho
-skinparam class {
-    BackgroundColor White
-    BorderColor Black
-}
-
-title Patrón FACTORY METHOD - CultivoFactory
-
-class CultivoFactory << (F,gold) Factory >> {
-    {static} +crear_cultivo(especie : String) : Cultivo
-    ====
-    {static} -_crear_pino() : Pino
-    {static} -_crear_olivo() : Olivo
-    {static} -_crear_lechuga() : Lechuga
-    {static} -_crear_zanahoria() : Zanahoria
-}
-
-abstract class Cultivo {
-    #_superficie : float
-    #_agua : int
-    ====
-    +get_superficie() : float
-    +get_agua() : int
-    +set_agua(agua : int) : void
-}
-
-class Pino {
-    -_variedad : String
-    -_altura : float
-    ====
-    +__init__(variedad : String)
-    +get_variedad() : String
-    +get_altura() : float
-    +crecer(incremento : float) : void
-}
-
-class Olivo {
-    -_tipo_aceituna : TipoAceituna
-    -_altura : float
-    ====
-    +__init__(tipo_aceituna : TipoAceituna)
-    +get_tipo_aceituna() : TipoAceituna
-    +get_altura() : float
-    +crecer(incremento : float) : void
-}
-
-class Lechuga {
-    -_variedad : String
-    -_invernadero : bool
-    ====
-    +__init__(variedad : String)
-    +get_variedad() : String
-    +esta_en_invernadero() : bool
-}
-
-class Zanahoria {
-    -_es_baby_carrot : bool
-    -_invernadero : bool
-    ====
-    +__init__(es_baby_carrot : bool)
-    +is_baby_carrot() : bool
-    +esta_en_invernadero() : bool
-}
-
-enum TipoAceituna {
-    ARBEQUINA
-    PICUAL
-    MANZANILLA
-}
-
-CultivoFactory ..> Cultivo : <<creates>>
-CultivoFactory ..> Pino : <<creates>>
-CultivoFactory ..> Olivo : <<creates>>
-CultivoFactory ..> Lechuga : <<creates>>
-CultivoFactory ..> Zanahoria : <<creates>>
-
-Cultivo <|-- Pino
-Cultivo <|-- Olivo
-Cultivo <|-- Lechuga
-Cultivo <|-- Zanahoria
-
-Olivo --> TipoAceituna : usa
-
-note right of CultivoFactory::crear_cultivo
-    Diccionario de factories:
-    
-    factories = {
-        "Pino": CultivoFactory._crear_pino,
-        "Olivo": CultivoFactory._crear_olivo,
-        "Lechuga": CultivoFactory._crear_lechuga,
-        "Zanahoria": CultivoFactory._crear_zanahoria
-    }
-    
-    if especie not in factories:
-        raise ValueError(f"Especie desconocida")
-    
-    return factories[especie]()
-end note
-
-note bottom of CultivoFactory
-    <b>FACTORY METHOD PATTERN</b>
-    
-    Ventajas:
-    • Cliente no conoce clases concretas
-    • Facil agregar nuevos tipos
-    • Validacion centralizada
-    • Retorna tipo base abstracto
-    
-    Uso:
-    cultivo = CultivoFactory.crear_cultivo("Pino")
-    # Retorna Cultivo (interfaz), no Pino (concreto)
-end note
-
-note top of Pino
-    Constantes:
-    SUPERFICIE: 2.0 m²
-    AGUA_INICIAL: 2L
-    ALTURA_INICIAL: 1.0m
-    CRECIMIENTO: 0.10m/riego
-end note
-
-note top of Olivo
-    Constantes:
-    SUPERFICIE: 3.0 m²
-    AGUA_INICIAL: 5L
-    ALTURA_INICIAL: 0.5m
-    CRECIMIENTO: 0.01m/riego
-end note
-
-note top of Lechuga
-    Constantes:
-    SUPERFICIE: 0.10 m²
-    AGUA_INICIAL: 1L
-    INVERNADERO: True
-end note
-
-note top of Zanahoria
-    Constantes:
-    SUPERFICIE: 0.15 m²
-    AGUA_INICIAL: 0L
-    INVERNADERO: False
-end note
-
-@enduml
-
-@startuml Patron_Strategy_Detallado
-skinparam linetype ortho
-skinparam class {
-    BackgroundColor White
-    BorderColor Black
-}
-
-title Patrón STRATEGY - Absorción de Agua
-
-interface AbsorcionAguaStrategy << (I,lightblue) Interface >> {
-    +calcular_absorcion(fecha, temp, humedad, cultivo) : int
-}
-
-class AbsorcionSeasonalStrategy {
-    +calcular_absorcion(fecha, temp, humedad, cultivo) : int
-}
-
-class AbsorcionConstanteStrategy {
-    -_cantidad_constante : int
-    ====
-    +__init__(cantidad : int)
-    +calcular_absorcion(fecha, temp, humedad, cultivo) : int
-}
-
-abstract class CultivoService {
-    #_estrategia_absorcion : AbsorcionAguaStrategy
-    ====
-    +__init__(estrategia : AbsorcionAguaStrategy)
-    +absorver_agua(cultivo : Cultivo) : int
-    +mostrar_datos(cultivo : Cultivo) : void
-}
-
-class PinoService {
-    +__init__()
-    +absorver_agua(cultivo : Pino) : int
-    +mostrar_datos(cultivo : Pino) : void
-}
-
-class OlivoService {
-    +__init__()
-    +absorver_agua(cultivo : Olivo) : int
-    +mostrar_datos(cultivo : Olivo) : void
-}
-
-class LechugaService {
-    +__init__()
-    +absorver_agua(cultivo : Lechuga) : int
-    +mostrar_datos(cultivo : Lechuga) : void
-}
-
-class ZanahoriaService {
-    +__init__()
-    +absorver_agua(cultivo : Zanahoria) : int
-    +mostrar_datos(cultivo : Zanahoria) : void
-}
-
-AbsorcionAguaStrategy <|.. AbsorcionSeasonalStrategy
-AbsorcionAguaStrategy <|.. AbsorcionConstanteStrategy
-
-CultivoService o-- AbsorcionAguaStrategy : usa
-
-CultivoService <|-- PinoService
-CultivoService <|-- OlivoService
-CultivoService <|-- LechugaService
-CultivoService <|-- ZanahoriaService
-
-PinoService ..> AbsorcionSeasonalStrategy : inyecta
-OlivoService ..> AbsorcionSeasonalStrategy : inyecta
-LechugaService ..> AbsorcionConstanteStrategy : inyecta (1L)
-ZanahoriaService ..> AbsorcionConstanteStrategy : inyecta (2L)
-
-note right of AbsorcionSeasonalStrategy::calcular_absorcion
-    Logica estacional:
-    
-    mes = fecha.month
-    if MARZO <= mes <= AGOSTO:  # Verano
-        return 5  # litros
-    else:  # Invierno
-        return 2  # litros
-end note
-
-note right of AbsorcionConstanteStrategy::calcular_absorcion
-    Logica constante:
-    
-    return self._cantidad_constante
-    
-    Siempre retorna la misma cantidad
-    independiente de la estacion
-end note
-
-note bottom of CultivoService
-    <b>STRATEGY PATTERN</b>
-    
-    Context que delega el calculo:
-    
-    def absorver_agua(self, cultivo):
-        agua = self._estrategia.calcular_absorcion(
-            fecha, temp, humedad, cultivo
-        )
-        cultivo.set_agua(cultivo.get_agua() + agua)
-        return agua
-    
-    Ventajas:
-    • Algoritmos intercambiables
-    • Inyeccion de dependencias
-    • Open/Closed Principle
-end note
-
-note as N1
-    <b>Estrategias por Cultivo:</b>
-    
-    Arboles (Pino, Olivo):
-    • AbsorcionSeasonalStrategy
-    • Verano: 5L
-    • Invierno: 2L
-    
-    Hortalizas (Lechuga, Zanahoria):
-    • AbsorcionConstanteStrategy
-    • Lechuga: 1L siempre
-    • Zanahoria: 2L siempre
-end note
-
-@enduml
-
-@startuml Patron_Observer_Detallado
-skinparam linetype ortho
-skinparam class {
-    BackgroundColor White
-    BorderColor Black
-}
-
-title Patrón OBSERVER - Sistema de Sensores
-
-interface "Observer<T>" as Observer << (I,lightblue) Interface >> {
-    +actualizar(evento : T) : void
-}
-
-abstract class "Observable<T>" as Observable {
-    #_observadores : List<Observer<T>>
-    ====
-    +agregar_observador(obs : Observer<T>) : void
-    +eliminar_observador(obs : Observer<T>) : void
-    #notificar_observadores(evento : T) : void
-}
-
-class TemperaturaReaderTask {
-    -_detenido : Event
-    -_intervalo : float
-    ====
-    +__init__()
-    +start() : void
-    +detener() : void
-    +run() : void
-    -_leer_temperatura() : float
-}
-
-class HumedadReaderTask {
-    -_detenido : Event
-    -_intervalo : float
-    ====
-    +__init__()
-    +start() : void
-    +detener() : void
-    +run() : void
-    -_leer_humedad() : float
-}
-
-class ControlRiegoTask {
-    -_detenido : Event
-    -_intervalo : float
-    -_sensor_temperatura : TemperaturaReaderTask
-    -_sensor_humedad : HumedadReaderTask
-    -_plantacion : Plantacion
-    -_plantacion_service : PlantacionService
-    -_ultima_temperatura : float
-    -_ultima_humedad : float
-    ====
-    +__init__(sensor_temp, sensor_hum, plantacion, service)
-    +start() : void
-    +detener() : void
-    +run() : void
-    +actualizar(evento : float) : void
-    -_evaluar_condiciones() : void
-}
-
-Observable <|-- TemperaturaReaderTask
-Observable <|-- HumedadReaderTask
-Observer <|.. ControlRiegoTask
-
-TemperaturaReaderTask "1" -right-> "0..*" Observer : notifica a >
-HumedadReaderTask "1" -right-> "0..*" Observer : notifica a >
-
-ControlRiegoTask --> TemperaturaReaderTask : observa
-ControlRiegoTask --> HumedadReaderTask : observa
-
-note right of Observable
-    <b>Observable<T> (Subject)</b>
-    
-    def notificar_observadores(self, evento: T):
-        for observador in self._observadores:
-            observador.actualizar(evento)
-    
-    • Generic type-safe
-    • Push-based notification
-    • Multiples observadores
-end note
-
-note right of TemperaturaReaderTask::run
-    Thread daemon que ejecuta:
-    
-    while not self._detenido.is_set():
-        temp = self._leer_temperatura()
-        # Valor aleatorio: -25C a 50C
-        self.notificar_observadores(temp)
-        time.sleep(2.0)  # cada 2 segundos
-end note
-
-note right of HumedadReaderTask::run
-    Thread daemon que ejecuta:
-    
-    while not self._detenido.is_set():
-        humedad = self._leer_humedad()
-        # Valor aleatorio: 0% a 100%
-        self.notificar_observadores(humedad)
-        time.sleep(3.0)  # cada 3 segundos
-end note
-
-note right of ControlRiegoTask::actualizar
-    Observer concreto:
-    
-    def actualizar(self, evento: float):
-        # Almacena ultima lectura
-        if isinstance(sender, TemperaturaReaderTask):
-            self._ultima_temperatura = evento
-        elif isinstance(sender, HumedadReaderTask):
-            self._ultima_humedad = evento
-end note
-
-note right of ControlRiegoTask::_evaluar_condiciones
-    Decision de riego:
-    
-    if (8 <= temp <= 15) and (humedad < 50):
-        self._plantacion_service.regar(
-            self._plantacion
-        )
-    
-    Se evalua cada 2.5 segundos
-end note
-
-note bottom
-    <b>OBSERVER PATTERN</b>
-    
-    Flujo:
-    1. Sensores leen datos cada N segundos
-    2. notificar_observadores(valor)
-    3. ControlRiego.actualizar(valor)
-    4. Evalua condiciones
-    5. Decide si regar o no
-    
-    Ventajas:
-    • Desacoplamiento sensor-control
-    • Event-driven architecture
-    • Multiple observers posible
-    • Thread-safe
-end note
 
 @enduml

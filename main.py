@@ -23,198 +23,136 @@ from python_forestacion.riego.control.control_riego_task import ControlRiegoTask
 from python_forestacion.excepciones.forestacion_exception import ForestacionException
 
 
+# ------------------------------------------------------------------------
+# UTILIDADES
+# ------------------------------------------------------------------------
 def imprimir_separador(titulo: str = "", ancho: int = 70):
-    """Imprime un separador visual."""
+    """Imprime un separador visual con título opcional."""
     if titulo:
-        print(f"\n{'-'*ancho}")
-        print(f"  {titulo}")
-        print(f"{'-'*ancho}")
+        print(f"\n{'-'*ancho}\n  {titulo}\n{'-'*ancho}")
     else:
         print("="*ancho)
 
 
-def main():
-    """Función principal con demostración completa."""
-    
-    print("="*70)
-    print("         SISTEMA DE GESTION FORESTAL - PATRONES DE DISENO")
-    print("="*70)
-    
-    # ========================================================================
-    # 1. PATRON SINGLETON
-    # ========================================================================
+def inicializar_servicios():
+    """Inicializa los servicios principales del sistema."""
     imprimir_separador("PATRON SINGLETON: Inicializando servicios")
-    
     registry1 = CultivoServiceRegistry.get_instance()
     registry2 = CultivoServiceRegistry.get_instance()
-    
     if registry1 is registry2:
         print("[OK] Todos los servicios comparten la misma instancia del Registry")
-    
-    # ========================================================================
-    # 2. CREACION DE INFRAESTRUCTURA
-    # ========================================================================
+
+    return (
+        TierraService(),
+        PlantacionService(),
+        TrabajadorService(),
+        RegistroForestalService(),
+        FincasService()
+    )
+
+
+def crear_infraestructura(tierra_service, plantacion_service):
+    """Crea tierra y plantación."""
     imprimir_separador("Creando infraestructura")
-    
-    tierra_service = TierraService()
-    plantacion_service = PlantacionService()
-    trabajador_service = TrabajadorService()
-    registro_service = RegistroForestalService()
-    fincas_service = FincasService()
-    
-    print("1. Creando tierra con plantacion...")
     terreno = tierra_service.crear_tierra_con_plantacion(
         id_padron_catastral=123456,
-        superficie=10000.0,  # 10,000 m2
+        superficie=10000.0,
         domicilio="Ruta 40 Km 1080, Agrelo, Mendoza",
         nombre_plantacion="Finca del Madero"
     )
-    
     plantacion = terreno.get_finca()
     print(f"[OK] Tierra creada: Padron {terreno.get_id_padron()}")
     print(f"[OK] Plantacion '{plantacion.get_nombre()}' con {plantacion.get_superficie_total()}m2")
-    
-    # ========================================================================
-    # 3. PATRON FACTORY METHOD
-    # ========================================================================
+    return terreno, plantacion
+
+
+def plantar_cultivos(plantacion_service, plantacion):
+    """Planta cultivos usando Factory Method."""
     imprimir_separador("PATRON FACTORY METHOD: Plantando cultivos")
-    
     try:
-        print("\n2. Plantando cultivos usando Factory Method...")
         plantacion_service.plantar(plantacion, "Pino", 50)
         plantacion_service.plantar(plantacion, "Olivo", 30)
         plantacion_service.plantar(plantacion, "Lechuga", 100)
         plantacion_service.plantar(plantacion, "Zanahoria", 150)
-        
         plantacion_service.mostrar_estado(plantacion)
-        
     except ForestacionException as e:
         print(f"[ERROR] {e.get_full_message()}")
-    
-    # ========================================================================
-    # 4. GESTION DE PERSONAL
-    # ========================================================================
+
+
+def gestionar_personal(plantacion, trabajador_service):
+    """Crea trabajadores, tareas y herramientas."""
     imprimir_separador("Gestion de Personal")
-    
-    print("\n3. Creando trabajadores con certificacion medica...")
-    
-    apto_juan = AptoMedico(
-        fecha_emision=date.today() - timedelta(days=30),
-        observaciones="Apto para trabajos agricolas"
-    )
-    
+
+    apto_juan = AptoMedico(date.today() - timedelta(days=30), "Apto para trabajos agricolas")
     tarea1 = Tarea(1, "Mantenimiento de pinos", date.today())
     tarea2 = Tarea(2, "Riego manual de hortalizas", date.today())
-    
-    trabajador1 = Trabajador(
-        dni=12345678,
-        nombre="Juan Perez",
-        tareas=[tarea1, tarea2],
-        apto_medico=apto_juan
-    )
-    
-    trabajador2 = Trabajador(
-        dni=87654321,
-        nombre="Maria Gomez",
-        tareas=[],
-        apto_medico=None  # Sin apto medico
-    )
-    
+
+    trabajador1 = Trabajador(12345678, "Juan Perez", [tarea1, tarea2], apto_juan)
+    trabajador2 = Trabajador(87654321, "Maria Gomez", [], None)
+
     plantacion.add_trabajador(trabajador1)
     plantacion.add_trabajador(trabajador2)
-    
-    herramienta = Herramienta(
-        id_herramienta=1,
-        nombre="Pala de jardineria",
-        certificacion_hs=True
-    )
-    
+
+    herramienta = Herramienta(1, "Pala de jardineria", True)
+
     print(f"[OK] Trabajador: {trabajador1.get_nombre()} - Apto medico: SI")
     print(f"[OK] Trabajador: {trabajador2.get_nombre()} - Apto medico: NO")
-    
-    # Trabajar
-    print("\n4. Ejecutando tareas...")
+
+    # Ejecutar tareas
+    print("\n[INFO] Ejecutando tareas...")
     trabajador_service.trabajar(trabajador1, date.today(), herramienta)
     trabajador_service.trabajar(trabajador2, date.today(), herramienta)
-    
-    # ========================================================================
-    # 5. PATRON STRATEGY + Riego Manual
-    # ========================================================================
-    imprimir_separador("PATRON STRATEGY: Riego manual (absorcion diferenciada)")
-    
-    try:
-        print("\n5. Regando plantacion manualmente...")
-        plantacion_service.regar(plantacion)
-        
-    except ForestacionException as e:
-        print(f"[ERROR] {e.get_full_message()}")
-    
-    # ========================================================================
-    # 6. PATRON OBSERVER + Sistema de Riego Automatizado
-    # ========================================================================
+
+
+def riego_automatizado(plantacion, plantacion_service, duracion: int = 15):
+    """Inicia sensores y controlador de riego automático."""
     imprimir_separador("PATRON OBSERVER: Sistema de riego automatizado")
-    
-    print("\n6. Iniciando sensores y controlador de riego...")
-    
-    # Crear sensores (Observable)
-    tarea_temp = TemperaturaReaderTask()
-    tarea_hum = HumedadReaderTask()
-    
-    # Crear controlador (Observer)
-    tarea_control = ControlRiegoTask(
-        tarea_temp,
-        tarea_hum,
-        plantacion,
-        plantacion_service
-    )
-    
-    # Iniciar threads daemon
-    tarea_temp.start()
-    tarea_hum.start()
-    tarea_control.start()
-    
-    print("[OK] Sensores y control iniciados")
-    print("[INFO] Sistema funcionando durante 15 segundos...")
-    
-    # Dejar funcionar el sistema
-    time.sleep(15)
-    
-    # Detener sistema
+    print("[INFO] Iniciando sensores y controlador de riego...")
+
+    # Crear sensores
+    sensor_temp = TemperaturaReaderTask()
+    sensor_hum = HumedadReaderTask()
+
+    # Crear controlador
+    controlador = ControlRiegoTask(sensor_temp, sensor_hum, plantacion, plantacion_service)
+
+    # Iniciar threads
+    sensor_temp.start()
+    sensor_hum.start()
+    controlador.start()
+
+    print(f"[INFO] Sistema funcionando durante {duracion} segundos...")
+    time.sleep(duracion)
+
+    # Detener threads
     print("\n[INFO] Deteniendo sistema de riego...")
-    tarea_temp.detener()
-    tarea_hum.detener()
-    tarea_control.detener()
-    
-    # Esperar a que terminen
-    tarea_temp.join(timeout=2)
-    tarea_hum.join(timeout=2)
-    tarea_control.join(timeout=2)
-    
-    # ========================================================================
-    # 7. COSECHA CON GENERICS
-    # ========================================================================
-    imprimir_separador("Cosecha con Paquetes Genericos")
-    
-    print("\n7. Cosechando por tipo...")
-    
+    sensor_temp.detener()
+    sensor_hum.detener()
+    controlador.detener()
+
+    # Esperar que terminen
+    sensor_temp.join(timeout=2)
+    sensor_hum.join(timeout=2)
+    controlador.join(timeout=2)
+
+
+def cosecha_y_fumigacion(fincas_service, plantacion_service, plantacion):
+    """Realiza cosecha por tipo y fumigación."""
+    imprimir_separador("Cosecha y Fumigacion")
+
     paquete_pinos = fincas_service.cosechar_por_tipo(plantacion, Pino)
     paquete_olivos = fincas_service.cosechar_por_tipo(plantacion, Olivo)
-    
     fincas_service.mostrar_paquete(paquete_pinos, "Pino")
     fincas_service.mostrar_paquete(paquete_olivos, "Olivo")
-    
-    # ========================================================================
-    # 8. FUMIGACION
-    # ========================================================================
-    print("\n8. Fumigando plantacion...")
+
+    print("\n[INFO] Fumigando plantacion...")
     plantacion_service.fumigar(plantacion, "Fungicida Organico XYZ")
-    
-    # ========================================================================
-    # 9. PERSISTENCIA
-    # ========================================================================
+
+
+def persistencia(registro_service, terreno, plantacion):
+    """Persiste y recupera registro forestal."""
     imprimir_separador("Persistencia con Pickle")
-    
-    print("\n9. Creando registro forestal...")
+
     registro = RegistroForestal(
         id_padron=terreno.get_id_padron(),
         tierra=terreno,
@@ -222,38 +160,56 @@ def main():
         propietario="Juan Perez",
         avaluo=50309233.55
     )
-    
-    print("\n10. Persistiendo registro en disco...")
+
+    print("\n[INFO] Persistiendo registro en disco...")
     try:
         registro_service.persistir(registro)
         print("[OK] Registro guardado exitosamente")
     except ForestacionException as e:
         print(f"[ERROR] {e.get_full_message()}")
-    
-    print("\n11. Recuperando registro desde disco...")
+
+    print("\n[INFO] Recuperando registro desde disco...")
     try:
         registro_leido = RegistroForestalService.leer_registro("Juan Perez")
         registro_service.mostrar_datos(registro_leido)
         print("[OK] Registro recuperado exitosamente")
     except ForestacionException as e:
         print(f"[ERROR] {e.get_full_message()}")
-    
-    # ========================================================================
-    # RESUMEN FINAL
-    # ========================================================================
+
+
+# ------------------------------------------------------------------------
+# MAIN
+# ------------------------------------------------------------------------
+def main():
+    """Función principal refactorizada y modularizada."""
+    imprimir_separador("SISTEMA DE GESTION FORESTAL - DEMO PATRONES DE DISEÑO", 70)
+
+    # Inicialización de servicios
+    tierra_service, plantacion_service, trabajador_service, registro_service, fincas_service = inicializar_servicios()
+
+    # Crear infraestructura
+    terreno, plantacion = crear_infraestructura(tierra_service, plantacion_service)
+
+    # Plantar cultivos
+    plantar_cultivos(plantacion_service, plantacion)
+
+    # Gestionar personal
+    gestionar_personal(plantacion, trabajador_service)
+
+    # Riego automático
+    riego_automatizado(plantacion, plantacion_service, duracion=15)
+
+    # Cosecha y fumigación
+    cosecha_y_fumigacion(fincas_service, plantacion_service, plantacion)
+
+    # Persistencia
+    persistencia(registro_service, terreno, plantacion)
+
+    # Resumen final
     imprimir_separador()
-    print("              EJEMPLO COMPLETADO EXITOSAMENTE")
+    print("              DEMO COMPLETADA EXITOSAMENTE")
     imprimir_separador()
-    print("  [OK] SINGLETON   - CultivoServiceRegistry (instancia unica)")
-    print("  [OK] FACTORY     - Creacion de 4 tipos de cultivos")
-    print("  [OK] OBSERVER    - Sistema de sensores y eventos")
-    print("  [OK] STRATEGY    - Algoritmos de absorcion de agua")
-    print("  [OK] REGISTRY    - Dispatch polimorfico sin isinstance")
-    print("  [OK] GENERICS    - Paquetes tipo-seguros")
-    print("  [OK] THREADS     - Sensores y control concurrente")
-    print("  [OK] PERSISTENCIA- Guardado y recuperacion con Pickle")
-    imprimir_separador()
-    print("\n[INFO] Revise el archivo: data/Juan Perez.dat")
+    print("[INFO] Revise el archivo de datos persistidos")
     print("[INFO] Sistema finalizado correctamente\n")
 
 
@@ -261,8 +217,4 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\n[!] Programa interrumpido por el usuario")
-    except Exception as e:
-        print(f"\n[ERROR FATAL] {e}")
-        import traceback
-        traceback.print_exc()
+        print("\n[!] Programa interrumpido por el usuario")
